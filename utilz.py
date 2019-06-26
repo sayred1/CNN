@@ -34,5 +34,10 @@ def get_parameter_dict(self):
 def relu(self,image):
     return np.maximum(0,image)
 
+def gradRelu(self,image):
+    image[image == 0] = 0
+    image[image != 0] = 1
+    return image
+
 def softmax(self, image):
     return np.exp(image)/np.sum(np.exp(image))

@@ -1,4 +1,6 @@
 import numpy as np
+import utilz
+
 
 def loss(self, output, label):
     
@@ -102,10 +104,9 @@ def fc_grad_second(self, label, output, prev_input):
     gradb4 = np.sum(gradf2, axis = 0)
     return(gradf2,gradw4,gradb4)
 
-def fc_grad_first(self, gradfc2, weight, prev_input):
+def fc_grad_first(self, gradfc2, weight, prev_input, curr_input):
     f1 = self.forward_dict['f1']
-    gradf1 = weight.T.dot(gradfc2)
-    gradf1[f1<=0] = 0
+    gradf1 = weight.T.dot(gradfc2) * utilz.gradRelu(self, curr_input)
     gradw3 = gradf1.dot(prev_input)
     gradb3 = np.sum(gradf1,axis = 0)
     return(gradf1, gradw3, gradb3)
