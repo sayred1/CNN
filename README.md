@@ -81,3 +81,4 @@ Currently, the NN is running, but the cost isn't decreasing rapidly enough. This
 1) Need more batches of data instead of one batch of 10.
 2) Need to tune the optimization hyperparameters.
 3) Optimization algorithm incorrectly updating parameters.
+4) Backprop or forward prop wrong (both checked with the above links).
