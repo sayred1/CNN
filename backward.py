@@ -1,24 +1,14 @@
 import numpy as np
-import utilz
-
-
-def loss(self, output, label):
-    
-    _image_arr = np.zeros((10,1))
-    _image_arr[label-1] = 1.
-    label = _image_arr # array of 0s and a single 1 (true value)
-    
-    loss = -np.sum(label * np.log(output))
-    return loss
+import utils
 
 def get_mask(conv):
     
     """
-    args 
-        - conv: convolution layer
-    
-    returns
-        - mask of max values from convolution layer
+    args: convolution layer
+    description: used for the backprop approximation in maxpool gradient. 
+                 Returns the maximum values of conv (passed into pool during 
+                 the forward operation). Assigns true to max, and false to all other.
+    returns: mask of max values from convolution layer
     """
 
     mask = conv == np.max(conv)
@@ -26,87 +16,106 @@ def get_mask(conv):
 
 def maxpool_gradient(self, conv_prev, dpool, filSize, stride):
     
+    filHeight, filWidth = filSize
+    
     """
-    args
-        - conv_prev: input into current pooling layer (normally convolution)
-        - dpool: gradient of the loss w.r.t current pooling layer
-        - filSize: filter size of pooling operation
-        - stride: stride size of pooling operation
-        
-    returns
-        - dconv_prev: gradient of loss w.r.t conv_prev
+    arguments:  conv_prev - input into current pooling layer (normally convolution) (prev. depth, prev. height, prev. width)
+                dpool - gradient of the loss w.r.t following pooling layer (curr. depth, height, width)
+                filSize - filter size of pooling operation (m, m)
+                stride - stride size of pooling operation (int)
+    description: loops through the dimensions of the pooling layer, applies an (m, m) filter with some stride, and 
+                 returns an approximation of the gradient (returning back the max value).
+    returns:  gradient of loss w.r.t conv_prev
     """
     
-    n, h_prev, w_prev, d_prev = conv_prev.shape     # shape of input into pool layer
-    n, h, w, d = dpool.shape                        # shape of derivative of pool layer
+    d_prev, h_prev, w_prev  = conv_prev.shape     # shape of input into pool layer
+    d, h, w = dpool.shape                         # shape of pool layer
     
     # initialize derivative
     dconv_prev = np.zeros(conv_prev.shape)       
     
-    for i in range(n):
+    for i in range(d):
         height = 0
         for j in range(w):
             width = 0
             for k in range(h):
-                
-                conv_prev_slice = conv_prev[i, height:height+filSize, width:width+filSize, :]
+                conv_prev_slice = conv_prev[i, height:height+filHeight, width:width+filWidth]
                 mask = get_mask(conv_prev_slice)
-                dconv_prev[i, height:height+filSize, width:width+filSize, :] += np.multiply(mask, dpool[i, j, k, :])
+                dconv_prev[i, height:height+filHeight, width:width+filWidth] += np.multiply(mask, dpool[i, j, k])
                 
                 width += stride
             height += stride
     return dconv_prev
-    
+
 def convolution_gradient(self, dout, prev_input, W, b, filSize, stride):
     
     """
-    args
-        - dout: gradient of loss w.r.t convolution output 
-        - prev_input: input into convolution layer (usually a pooling layer)
-        - W: kernel of convolution layer
-        - b: bias of convolution layer
-        - filSize: filter size of pooling operation
-        - stride: stride size of pooling operation
-        
-    returns
-        - dprev_input: gradient of cost with respect to conv_prev
-        - dW: gradient of loss w.r.t convolution kernel 
-        - db: gradient of loss w.r.t convolution bias 
+    args:  dout - gradient of loss w.r.t convolution output (curr. depth, curr. height, curr. width)
+           prev_input - input into convolution layer (usually a pooling layer) (prev. depth, prev. height, prev. width)
+           W - kernel of convolution layer (curr. depth, prev. depth, height, width)
+           b - bias of convolution layer (curr. depth, 1)
+           filSize - filter size of pooling operation (m, m)
+           stride - stride size of pooling operation (int)
+    description:  loops through the current convolution layer to obtain three gradients (mentioned below)
+    returns: dprev_input - gradient of cost with respect to conv_prev
+             dW - gradient of loss w.r.t convolution kernel 
+             db - gradient of loss w.r.t convolution bias 
     """
     
-    (n_prev, h_prev, w_prev, d_prev) = prev_input.shape       # input shape to conv layer
-    (n_weight , f, f, d_weight) = W.shape                     # kernel shape of conv layer
-    (n, h, w, d) = dout.shape                                 # gradient shape of conv layer derivative
+    (d_prev, h_prev, w_prev) = prev_input.shape       # input shape to conv layer
+    (_, _, hKernel, wKernel) = W.shape                # kernel shape of conv layer 
+    (d, h, w) = dout.shape                            # gradient shape of conv layer derivative
     
     # initialize derivatives
-    dprev_input = np.zeros((n_prev, h_prev, w_prev, d_prev))                      
-    dW = np.zeros((n_weight , f, f, d_weight)) 
-    db = np.zeros((n,1))
+    dprev_input = np.zeros(prev_input.shape)                      
+    dW = np.zeros(W.shape) 
+    db = np.zeros(b.shape)
 
-    for i in range(n):                       
+    for j in range(d):
         height = 0
-        for j in range(h):                   
+        for k in range(h):
             width = 0
-            for k in range(w):               
-                for l in range(d):   
-                    
-                    prev_slice = prev_input[i, height:height+filSize, width:width+filSize, :] 
-                    dprev_input[i, height:height+filSize, width:width+filSize, :] += W[i,:,:,:] * dout[i, j, k, l]
-                    dW[i,:,:,:] += prev_slice * dout[i, j, k, l]
-            
-            db[i,:] += np.sum(dout)
+            for l in range(w):
+                prev_slice = prev_input[:, height:height+hKernel, width:width+wKernel]
+                dW[j] += dout[j, k, l] * prev_slice
+                dprev_input[:, height:height+hKernel, width:width+wKernel] += dout[j,k,l] * W[j] 
+        
+        db[j] += np.sum(dout[j])
 
     return dprev_input, dW, db
 
+
 def fc_grad_second(self, label, output, prev_input):
+    
+    """
+    arguments: label - true value (10, 1)
+               output - NN prediction (10, 1)
+               prev_input - previous fc layer (64, 1)
+    description: calculates the gradient w.r.t the last fc layer
+    returns: gradf2 - gradient of loss w.r.t the output (10, 1)
+             gradw4 - gradient of loss w.r.t weight (10, 64)
+             gradb4 - gradient of loss w.r.t bias (10, 1)
+    """
+    
     gradf2 = output - label
     gradw4 = gradf2.dot(prev_input.T)
     gradb4 = np.sum(gradf2, axis = 0)
     return(gradf2,gradw4,gradb4)
 
-def fc_grad_first(self, gradfc2, weight, prev_input, curr_input):
-    f1 = self.forward_dict['f1']
-    gradf1 = weight.T.dot(gradfc2) * utilz.gradRelu(self, curr_input)
+def fc_grad_first(self, gradfc2, gradweight, prev_input, curr_input):
+    
+    """
+    arguments: gradfc2 - gradient of loss w.r.t fc2 (10, 1)
+               gradweight - gradient of loss w.r.t fc2 weight (10, 64)
+               prev_input - previous pooling layer (1, 1600)
+               curr_input - input into fc layer 1 (not activated) (64, 1)
+    description: calculates the gradient w.r.t the first fc layer
+    returns: gradf1 - gradient of loss w.r.t the output (64, 1)
+             gradw3 - gradient of loss w.r.t weight (64, 1600)
+             gradb3 - gradient of loss w.r.t bias (64, 1)
+    """
+        
+    gradf1 = gradweight.T.dot(gradfc2) 
     gradw3 = gradf1.dot(prev_input)
     gradb3 = np.sum(gradf1,axis = 0)
     return(gradf1, gradw3, gradb3)
