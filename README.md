@@ -1,4 +1,3 @@
-## To run the CNN, clone CNN with Numpy.ipynb, backward.py, forward.py, and utils.py.
 
 #### As of now, the number of layers are held static, as are the dimensions of parameters. CNN with Numpy.ipynb is composed of the network layout, while backward.py, forward.py, and utils.py hold functions used in the model.
 
@@ -82,5 +81,3 @@ Currently, the NN is running, but the cost isn't decreasing rapidly enough. This
 1) Need more batches of data instead of one batch of 10.
 2) Need to tune the optimization hyperparameters.
 3) Optimization algorithm incorrectly updating parameters.
-4) Gradients aren't correct, although checked with above links (will check numerically and via other methods).
-5) Forward is wrong (checked with the above links)
