@@ -1,4 +1,4 @@
-# To run, clone all .py and .ipynb files
+# To run, first clone the cnn directory
 
 #### As of now, the number of layers are held static, as are the dimensions of parameters. CNN with Numpy.ipynb is composed of the network layout, while backward.py, forward.py, and utils.py hold functions used in the model.
 
