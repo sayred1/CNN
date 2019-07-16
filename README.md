@@ -55,23 +55,30 @@ moments = [v1,m1,bv1,bm1,v2,m2,bv2,bm2,v3,m3,bv3,bm3,v4,m4,bv4,bm4]
 ```python
 # Specify number of epochs, and train over specified batch/batches (here I train over a single batch only)
 
-Y = np.zeros((batchSize,numLabels,1))                                            # init array of one hot vector labels
-numEpochs = 10
-numLabels = 10                                                                   # numbers 0 - 9 
+cost = []       # cost per epoch
+numEpochs = 10  
+numLabels = 10   
+batchSize = 10
+Y = np.zeros((batchSize,numLabels,1))
 
 # for each image in batch, one iteration = forward, backward, and optimization
-cost = []     # store the cost per epoch
-for epoch in range(numEpochs):                                                                   
+_iter = 0 
+for epoch in range(numEpochs):
+    cost_ = 0 # average cost per iteration
     for img in range(batchSize):
-        Y[img,train_label[img]] = 1.                                             # one hot vector labels
-        image, label = train_image[:,:,:,img],Y[img]                             # load the i-th example
+        _iter += 1
+        Y[img,train_labels[img]] = 1.                                         # one hot vector labels
+        image, label = train_images[:,:,:,img],Y[img]
         loss, fp = myCNN().forwardPass(image, label, params)                     # this returns the loss and forward pass
         grads =  myCNN().backwardPass(params, loss, fp, image, label)            # this returns the gradiets w.r.t the loss
-        cost.append(loss)
-        if (img+1) % batchSize == 0:                                             # every batchSize, optimize/print cost
+        cost_ += loss
+        print("iteration ", _iter)
+        if (img+1) % batchSize == 0:
             print("now optimizing: epoch ", epoch+1)
-            params = myCNN().optimize(0.001, 0.9, 0.999, 1E-7, moments, grads, params, img, batchSize)
-            print("average cost: ", sum(cost)/batchSize)
+            params = myCNN().optimize(0.0001, 0.9, 0.999, 1E-7, moments, grads, params, _iter, batchSize)
+            cost_ = cost_/batchSize 
+            print("average cost: ", cost_)
+            cost.append(cost_)
 ```
 
 Information on the implementation of forward, backward, and optimization was obtained at: https://github.com/Alescontrela/Numpy-CNN/tree/master/CNN, https://github.com/Kulbear/deep-learning-coursera/blob/master/Convolutional%20Neural%20Networks/Convolution%20model%20-%20Step%20by%20Step%20-%20v1.ipynb, https://arxiv.org/abs/1412.6980.
@@ -79,7 +86,7 @@ Information on the implementation of forward, backward, and optimization was obt
 The whole network was reformatted since the original was messy, and it wan't clear how to run several epochs with the model.
 
 Currently, the NN is running, but the cost isn't decreasing rapidly enough. This could be due to several reasons that I will test.
-1) Need more batches of data instead of one batch of 10.
+1) Need more batches of data instead of one batch of 10. (going to run full dataset on cms)
 2) Need to tune the optimization hyperparameters.
 3) Optimization algorithm incorrectly updating parameters.
 4) Backprop or forward prop wrong (both checked with the above links).
