@@ -42,18 +42,21 @@ def pool(self, conv, filSize, stride):
     returns: maxpool (depth, height, width)
     """
     
+    depthConv, heightConv, widthConv = conv.shape
+    filHeight, filWidth = filSize
+    
     pool = utils.initPool(self, conv, filSize, stride)
     _, heightImages,widthImages = pool.shape
-    filHeight, filWidth = filSize
 
-    height = 0
-    for j in range(heightImages):
-        width = 0
-        for k in range(widthImages):
-            temp = conv[:,height:height+filHeight,width:width+filWidth]
-            pool[:,j,k] = np.max(temp)                    
-            width+=stride
-        height+=stride
+    for i in range(depthConv):
+        height = 0
+        for j in range(heightImages):
+            width = 0
+            for k in range(widthImages):
+                temp = conv[i,height:height+filHeight,width:width+filWidth]
+                pool[i,j,k] = np.max(temp)                    
+                width+=stride
+            height+=stride
     return pool
 
 def loss(self, output, label): 
