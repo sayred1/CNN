@@ -98,7 +98,7 @@ def fc_grad_second(self, label, output, prev_input):
     """
     
     gradf2 = output - label
-    gradw4 = gradf2.dot(prev_input.T)
+    gradw4 = gradf2.dot(prev_input.T) 
     gradb4 = np.sum(gradf2, axis = 0)
     return(gradf2,gradw4,gradb4)
 
@@ -115,7 +115,7 @@ def fc_grad_first(self, gradfc2, gradweight, prev_input, curr_input):
              gradb3 - gradient of loss w.r.t bias (64, 1)
     """
         
-    gradf1 = gradweight.T.dot(gradfc2) 
-    gradw3 = gradf1.dot(prev_input)
+    gradf1 = gradweight.T.dot(gradfc2)d
+    gradw3 = gradf1.dot(prev_input.T) 
     gradb3 = np.sum(gradf1,axis = 0)
     return(gradf1, gradw3, gradb3)
